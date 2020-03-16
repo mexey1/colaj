@@ -67,15 +67,21 @@ object WifiSetup {
      * be called from the UI thread.
      */
     @Synchronized fun connectToWifiNetwork(result:ScanResult,json: JSONObject){
-        if(Looper.myLooper() == Looper.getMainLooper())
-            NetworkOnMainThreadException()
-        wifiAttempts.set(0)
-        Handler.handler.post(Runnable {
-            progressDialog = UtilityClass.showDialog("Checking Password","Verifying password provided is correct",
-                PROGRESS_DIALOG,(UtilityClass.context as AppCompatActivity).supportFragmentManager,null,0,-1)
-        })
-        Log.d(TAG,"Attempting to connect to ${result.SSID} with password $json")
-        connect(result,json)
+        try{
+            if(Looper.myLooper() == Looper.getMainLooper())
+                NetworkOnMainThreadException()
+            wifiAttempts.set(0)
+            Handler.handler.post(Runnable {
+                progressDialog = UtilityClass.showDialog("Checking Password","Verifying password provided is correct",
+                    PROGRESS_DIALOG,(UtilityClass.context as AppCompatActivity).supportFragmentManager,null,0,-1)
+            })
+            Log.d(TAG,"Attempting to connect to ${result.SSID} with password $json")
+            connect(result,json)
+        }
+        catch (e:java.lang.Exception){
+            UtilityClass.sendMail(e)
+            e.printStackTrace()
+        }
     }
 
     /**
@@ -84,6 +90,7 @@ object WifiSetup {
      * devices
      */
     private fun connect(scanResult: ScanResult?, json: JSONObject?){
+        //do not remove try catch
         try {
             SSID = scanResult!!.SSID
             val password = if(json?.has("password") == true) json.getString("password") else ""
@@ -134,6 +141,7 @@ object WifiSetup {
             Log.d(TAG,"Waiting for call back")
         }
         catch (e:Exception){
+            UtilityClass.sendMail(e)
             e.printStackTrace()
         }
     }
@@ -141,20 +149,26 @@ object WifiSetup {
      * we'd sleep for WIFI_PASSWORD_TIMER seconds and when we wake, we check if we are connected to the wifi network
      */
     private fun sendMulticast(){
-        Thread.sleep(WIFI_PASSWORD_TIMER)
-        if(isConnectedToWifi()){
-            wifiAttempts.set(0)
-            sendColajHello()
+        try {
+            Thread.sleep(WIFI_PASSWORD_TIMER)
+            if(isConnectedToWifi()){
+                wifiAttempts.set(0)
+                sendColajHello()
+            }
+            else if(wifiAttempts.incrementAndGet() < 3)
+            {
+                Log.d(TAG,"Connecting to wifi failed. Retrying... ${wifiAttempts.get()}")
+                connectUsingConfig(config!!)
+                sendMulticast()
+            }
+            else{
+                Log.d(TAG,"Send multicast done")
+                completedProcessingWifi()
+            }
         }
-        else if(wifiAttempts.incrementAndGet() < 3)
-        {
-            Log.d(TAG,"Connecting to wifi failed. Retrying... ${wifiAttempts.get()}")
-            connectUsingConfig(config!!)
-            sendMulticast()
-        }
-        else{
-            Log.d(TAG,"Send multicast done")
-            completedProcessingWifi()
+        catch (e:java.lang.Exception){
+            UtilityClass.sendMail(e)
+            e.printStackTrace()
         }
 
     }
@@ -163,37 +177,59 @@ object WifiSetup {
      * this method is called to connect to a wifi using the a config value
      */
     private fun connectUsingConfig(config:WifiConfiguration){
-        //connectivityManager.registerNetworkCallback(networkRequest, connectivityCallbackForWifiPasswordCheck())
-        var netID = wifiManager.addNetwork(config)
-        UtilityClass.showToast("connecting to network $SSID with network ID $netID")
-        if(netID==-1 && UtilityClass.hasWhiteSpace(SSID)){
-            Log.d(TAG,"netID was -1. Attempting to connect by escaping white spaces")
-            config.SSID = UtilityClass.convertToQuotedString(SSID,true)
-            netID = wifiManager.addNetwork(config)
+        try {
+            //connectivityManager.registerNetworkCallback(networkRequest, connectivityCallbackForWifiPasswordCheck())
+            var netID = wifiManager.addNetwork(config)
+            UtilityClass.showToast("connecting to network $SSID with network ID $netID")
+            if(netID==-1 && UtilityClass.hasWhiteSpace(SSID)){
+                Log.d(TAG,"netID was -1. Attempting to connect by escaping white spaces")
+                config.SSID = UtilityClass.convertToQuotedString(SSID,true)
+                netID = wifiManager.addNetwork(config)
+            }
+            Log.d(TAG,"beginning to connect to $SSID with network id $netID")
+            wifiManager.disconnect();
+            wifiManager.enableNetwork(netID, true);
+            wifiManager.reconnect();
         }
-        Log.d(TAG,"beginning to connect to $SSID with network id $netID")
-        wifiManager.disconnect();
-        wifiManager.enableNetwork(netID, true);
-        wifiManager.reconnect();
+        catch (e:Exception){
+            UtilityClass.sendMail(e)
+            e.printStackTrace()
+        }
     }
 
     private fun createNetworkRequest(requireInternet:Boolean):NetworkRequest{
-        Log.d(TAG,"Getting IP Address")
-        //this portion would only execute for API 29 and above so the suppresslint is only needed for compilation purposes
-        return if(!requireInternet)
-            NetworkRequest.Builder().removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build()
-        else
-            NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build()
+        lateinit var value:NetworkRequest
+        try {
+            Log.d(TAG,"Getting IP Address")
+            //this portion would only execute for API 29 and above so the suppresslint is only needed for compilation purposes
+            value =  if(!requireInternet)
+                NetworkRequest.Builder().removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build()
+            else
+                NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build()
+        }
+        catch (e:Exception){
+            UtilityClass.sendMail(e)
+            e.printStackTrace()
+        }
+        return value
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
     private fun createNetworkRequest(networkSpecifier: WifiNetworkSpecifier ?,requireInternet: Boolean):NetworkRequest{
-        Log.d(TAG,"Getting IP Address")
-        //this portion would only execute for API 29 and above so the suppresslint is only needed for compilation purposes
-        return if(!requireInternet)
-            NetworkRequest.Builder().removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addTransportType(NetworkCapabilities.TRANSPORT_WIFI).setNetworkSpecifier(networkSpecifier).build()
-        else
-            NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addTransportType(NetworkCapabilities.TRANSPORT_WIFI).setNetworkSpecifier(networkSpecifier).build()
+        lateinit var value:NetworkRequest
+        try {
+            Log.d(TAG,"Getting IP Address")
+            //this portion would only execute for API 29 and above so the suppresslint is only needed for compilation purposes
+            value =  if(!requireInternet)
+                NetworkRequest.Builder().removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addTransportType(NetworkCapabilities.TRANSPORT_WIFI).setNetworkSpecifier(networkSpecifier).build()
+            else
+                NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addTransportType(NetworkCapabilities.TRANSPORT_WIFI).setNetworkSpecifier(networkSpecifier).build()
+        }
+        catch (e:java.lang.Exception){
+            UtilityClass.sendMail(e)
+            e.printStackTrace()
+        }
+        return value
     }
 
     /**
@@ -209,13 +245,21 @@ object WifiSetup {
      * method to check if the device is connected to a wifi network
      */
     private fun isConnectedToWifi():Boolean{
-        val wifiInfo = wifiManager.connectionInfo
-        Log.d(TAG,"Is wifi info null ${wifiInfo is WifiInfo}")
-        Log.d(TAG,"Wifi Info is ${wifiInfo.ssid} && SSID is $SSID and IP is ${wifiInfo.ipAddress}")
-        ipvInet4Address = Inet4Address.getByAddress(UtilityClass.convertIPToByteArray(wifiInfo.ipAddress)) as Inet4Address
-        Log.d(TAG,"IP addy is ${ipvInet4Address.hostAddress}")
-        //Thread.sleep(WIFI_PASSWORD_TIMER)
-        return (wifiInfo is WifiInfo && wifiInfo.ssid == UtilityClass.convertToQuotedString(SSID,false))// && wifiInfo.ipAddress!=0)
+        var value = false
+        try {
+            val wifiInfo = wifiManager.connectionInfo
+            Log.d(TAG,"Is wifi info null ${wifiInfo is WifiInfo}")
+            Log.d(TAG,"Wifi Info is ${wifiInfo.ssid} && SSID is $SSID and IP is ${wifiInfo.ipAddress}")
+            ipvInet4Address = Inet4Address.getByAddress(UtilityClass.convertIPToByteArray(wifiInfo.ipAddress)) as Inet4Address
+            Log.d(TAG,"IP addy is ${ipvInet4Address.hostAddress}")
+            //Thread.sleep(WIFI_PASSWORD_TIMER)
+            value = (wifiInfo is WifiInfo && wifiInfo.ssid == UtilityClass.convertToQuotedString(SSID,false))// && wifiInfo.ipAddress!=0)
+        }
+        catch (e:Exception){
+            e.printStackTrace()
+            UtilityClass.sendMail(e)
+        }
+        return value
     }
 
     /**
@@ -361,7 +405,9 @@ object WifiSetup {
         completedProcessingWifi()
     }*/
 
+    //do not remove try catch
     private fun sendColajHello(){
+        var value: Exception? =  null
         lateinit var socket:Socket
         try {
             Log.d(TAG,"Sending Colaj hello")
@@ -383,12 +429,15 @@ object WifiSetup {
         }
         //if there was a socket timeout while connecting, we'd retry again
         catch (e:Exception){
+            value = e
             e.printStackTrace()
             sendColajHello()
         }
         finally {
             wifiAttempts.set(0)
             completedProcessingWifi()
+            if(value !=null)
+                UtilityClass.sendMail(value)
         }
     }
 
@@ -404,71 +453,77 @@ object WifiSetup {
 
     private fun getWifiConfig(scanResult: ScanResult?, password: String,ssid:String): WifiConfiguration? {
         val config = WifiConfiguration()
-        config.SSID = UtilityClass.convertToQuotedString(scanResult?.SSID ?: ssid,false)
-        config.status = WifiConfiguration.Status.ENABLED;
-        Log.d(TAG,"Getting config for ${UtilityClass.convertToQuotedString(scanResult?.SSID ?: ssid,false)}")
-        Log.d(TAG,"Getting security for ${UtilityClass.getWifiSecurityType(scanResult)}")
-        when (val security: Int = UtilityClass.getWifiSecurityType(scanResult)) {
-            SECURITY_NONE -> config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
-            SECURITY_WEP -> {
-                Log.d(TAG,"WIFI is WEP")
-                config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
-                config.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN)
-                config.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.SHARED)
-                if (!TextUtils.isEmpty(password)) {
-                    val length = password.length
-                    // WEP-40, WEP-104, and 256-bit WEP (WEP-232?)
-                    if ((length == 10 || length == 26 || length == 58) && password.matches(Regex("[0-9A-Fa-f]*")))
-                        config.wepKeys[0] = password
-                    else
-                        config.wepKeys[0] = '"' + password + '"'
+        try {
+            config.SSID = UtilityClass.convertToQuotedString(scanResult?.SSID ?: ssid,false)
+            config.status = WifiConfiguration.Status.ENABLED;
+            Log.d(TAG,"Getting config for ${UtilityClass.convertToQuotedString(scanResult?.SSID ?: ssid,false)}")
+            Log.d(TAG,"Getting security for ${UtilityClass.getWifiSecurityType(scanResult)}")
+            when (val security: Int = UtilityClass.getWifiSecurityType(scanResult)) {
+                SECURITY_NONE -> config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
+                SECURITY_WEP -> {
+                    Log.d(TAG,"WIFI is WEP")
+                    config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
+                    config.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN)
+                    config.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.SHARED)
+                    if (!TextUtils.isEmpty(password)) {
+                        val length = password.length
+                        // WEP-40, WEP-104, and 256-bit WEP (WEP-232?)
+                        if ((length == 10 || length == 26 || length == 58) && password.matches(Regex("[0-9A-Fa-f]*")))
+                            config.wepKeys[0] = password
+                        else
+                            config.wepKeys[0] = '"' + password + '"'
+                    }
                 }
-            }
-            SECURITY_PSK -> {
-                Log.d(TAG,"WIFI is PSK")
-                config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK)
-                if (!TextUtils.isEmpty(password)) {
-                    if (password.matches(Regex("[0-9A-Fa-f]{64}"))){
-                        config.preSharedKey = password
-                        Log.d(TAG,"plain password")
-                    }
-                    else {
-                        val password = '"'+ password + '"'
-                        config.preSharedKey = password
-                        Log.d(TAG," password $password")
-                    }
+                SECURITY_PSK -> {
+                    Log.d(TAG,"WIFI is PSK")
+                    config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK)
+                    if (!TextUtils.isEmpty(password)) {
+                        if (password.matches(Regex("[0-9A-Fa-f]{64}"))){
+                            config.preSharedKey = password
+                            Log.d(TAG,"plain password")
+                        }
+                        else {
+                            val password = '"'+ password + '"'
+                            config.preSharedKey = password
+                            Log.d(TAG," password $password")
+                        }
                         //config.preSharedKey = '"'+ password + '"'
+                    }
                 }
-            }
-            SECURITY_EAP, SECURITY_EAP_SUITE_B -> {
-                Log.d(TAG,"WIFI is SECURITY_EAP")
-                config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_EAP)
-                config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.IEEE8021X)
-                if (security == SECURITY_EAP_SUITE_B) {
-                    config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.SUITE_B_192)
+                SECURITY_EAP, SECURITY_EAP_SUITE_B -> {
+                    Log.d(TAG,"WIFI is SECURITY_EAP")
+                    config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_EAP)
+                    config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.IEEE8021X)
+                    if (security == SECURITY_EAP_SUITE_B) {
+                        config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.SUITE_B_192)
+                        //config.requirePMF = true
+                        config.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.GCMP_256)
+                        config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.GCMP_256)
+                        //config.allowedGroupManagementCiphers.set(WifiConfiguration.GroupMgmtCipher.BIP_GMAC_256)
+                        // allowedSuiteBCiphers will be set according to certificate type
+                    }
+                    if (!TextUtils.isEmpty(password))
+                        config.enterpriseConfig.password = password
+                }
+                SECURITY_SAE -> {
+                    Log.d(TAG,"WIFI is SAE")
+                    config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.SAE)
                     //config.requirePMF = true
-                    config.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.GCMP_256)
-                    config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.GCMP_256)
-                    //config.allowedGroupManagementCiphers.set(WifiConfiguration.GroupMgmtCipher.BIP_GMAC_256)
-                    // allowedSuiteBCiphers will be set according to certificate type
+                    if (!TextUtils.isEmpty(password))
+                        config.preSharedKey = '"'.toString() + password + '"'
                 }
-                if (!TextUtils.isEmpty(password))
-                    config.enterpriseConfig.password = password
+                SECURITY_OWE -> {
+                    Log.d(TAG,"WIFI is OWE")
+                    config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.OWE)
+                    //config.requirePMF = true
+                }
+                else -> {
+                }
             }
-            SECURITY_SAE -> {
-                Log.d(TAG,"WIFI is SAE")
-                config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.SAE)
-                //config.requirePMF = true
-                if (!TextUtils.isEmpty(password))
-                    config.preSharedKey = '"'.toString() + password + '"'
-            }
-            SECURITY_OWE -> {
-                Log.d(TAG,"WIFI is OWE")
-                config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.OWE)
-                //config.requirePMF = true
-            }
-            else -> {
-            }
+        }
+        catch (e:Exception){
+            UtilityClass.sendMail(e)
+            e.printStackTrace()
         }
         return config
     }

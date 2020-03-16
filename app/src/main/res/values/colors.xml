@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#6200EE</color>
+    <color name="colorPrimaryDark">#3700B3</color>
+    <color name="colorAccent">#03DAC5</color>
+    <color name = "blue">#5B92E5</color>
+    <color name = "blue1">#2196F3</color>
+    <color name = "grey">#555555</color>
+    <color name = "grey1">#696969</color>
+    <color name = "darkgrey">#808080</color>
+    <color name = "darkgrey1">#D3D3D3</color>
+    <color name="grey_light">#EDEDED</color>
+    <color name = "orange">#FF6700</color>
+    <color name = "orange1">#FFA500</color>
+    <color name = "white">#FFFFFF</color>
+    <color name = "black">#000000</color>
+    <color name="battleship_grey">#848482</color>
+    <color name="android_green">#a4c639</color>
+    <color name="applegreen">#8db600</color>
+    <color name="ash_grey">#B2BEB5</color>
+    <color name="baby_blue">#89CFF0</color>
+    <color name="battleship_grey_light">#32848482</color>
+    <color name="cloud">#ECF0F1</color>
+    <color name="turquoise">#1ABC9C</color>
+    <color name="green_sea">#16A085</color>
+    <color name="midnight_blue">#2C3E50</color>
+    <color name="silver">#BDC3C7</color>
+    <color name="pomegranate">#C0392B</color>
+    <color name="red">#EE3233</color>
+    <color name="emerald">#2ECC71</color>
+    <color name="wisteria">#8E44AD</color>
+    <color name="peterriver">#3498db</color>
+    <color name="wet_asphalt">#34495E</color>
+    <color name="transparent">#00000000</color>
+    <color name="first">#F4BF0E</color>
+    <color name="second">#FF7F68</color>
+    <color name="third">#374A6D</color>
+    <color name="fourth">#7EBFB2</color>
+    <color name="fourth_dark">#71ABA0</color>
+</resources>

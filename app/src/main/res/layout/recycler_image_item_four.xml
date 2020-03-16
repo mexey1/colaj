@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="horizontal" android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/layout_one"
+        android:orientation="horizontal">
+        <ImageView
+            android:layout_width="@dimen/_0dp"
+            android:layout_height="@dimen/_100dp"
+            android:layout_weight="0.3"
+            android:layout_margin="@dimen/_0_5dp"
+            android:scaleType="fitCenter"
+            android:id="@+id/image_one"/>
+        <ImageView
+            android:layout_width="@dimen/_0dp"
+            android:layout_height="@dimen/_100dp"
+            android:layout_weight="0.3"
+            android:layout_margin="@dimen/_0_5dp"
+            android:scaleType="fitCenter"
+            android:id="@+id/image_two"/>
+        <ImageView
+            android:layout_width="@dimen/_0dp"
+            android:layout_height="@dimen/_100dp"
+            android:layout_weight="0.3"
+            android:layout_margin="@dimen/_0_5dp"
+            android:scaleType="fitCenter"
+            android:id="@+id/image_three"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal" android:layout_width="match_parent"
+        android:visibility="gone"
+        android:id="@+id/layout_two"
+        android:layout_height="wrap_content">
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/_100dp"
+            android:scaleType="fitCenter"
+            android:id="@+id/image_one"
+            android:layout_margin="@dimen/_0_5dp"
+            tools:ignore="DuplicateIds" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/_0dp"
+                android:layout_weight="0.5"
+                android:scaleType="fitCenter"
+                android:layout_margin="@dimen/_0_5dp"
+                android:id="@+id/image_two"
+                tools:ignore="DuplicateIds" />
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/_0dp"
+                android:layout_weight="0.5"
+                android:scaleType="fitCenter"
+                android:layout_margin="@dimen/_0_5dp"
+                android:id="@+id/image_three"
+                tools:ignore="DuplicateIds" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:visibility="gone"
+        android:id="@+id/layout_three"
+        android:layout_height="wrap_content">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:scaleType="fitCenter"
+                android:id="@+id/image_two"
+                android:layout_margin="@dimen/_0_5dp"
+                tools:ignore="DuplicateIds" />
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:scaleType="fitCenter"
+                android:layout_margin="@dimen/_0_5dp"
+                android:id="@+id/image_three"
+                tools:ignore="DuplicateIds" />
+        </LinearLayout>
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:scaleType="fitCenter"
+            android:id="@+id/image_one"
+            android:layout_margin="@dimen/_0_5dp"
+            tools:ignore="DuplicateIds" />
+    </LinearLayout>
+</LinearLayout>

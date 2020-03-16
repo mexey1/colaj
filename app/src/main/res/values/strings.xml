@@ -1,0 +1,50 @@
+<resources>
+    <string name="app_name">Canvass</string>
+    <string name="email_hint">Email</string>
+    <string name="email_desc">Your email is used to admin your Canvass devices</string>
+    <string name="submit">Submit</string>
+    <string name="next">Next</string>
+    <string name="verify">Verify</string>
+    <string name="previous">Previous</string>
+    <string name="got_it">Got it</string>
+    <string name="search">Searching for devices</string>
+    <string name="turn_on_bt">Turn on Bluetooth</string>
+    <string name="turn_on_bt_txt">Bluetooth has to be enabled for new Canvass setup. Turn on Bluetooth from your phone\'s settings and return to the app.</string>
+
+    <string name="turn_on_location">Turn on Location Services</string>
+    <string name="turn_on_location_txt">Location Services is needed for Canvass setup. Grant the permission from your phone\'s settings and return to the app.</string>
+    <string name="retry">Retry</string>
+    <string name="tbd">Discovered devices would show up here.</string>
+    <string name="bt_devices">Bluetooth Devices</string>
+    <string name="select_bt_devices">Select your Colaj from the list of devices below. If your device doesn\'t show up, you can hit the Retry button below or try restarting your Colaj.</string>
+    <string name="wifi_nets">Wifi Network</string>
+    <string name="wifi_nets_desc">Choose the Wi-Fi network you would like to use with your Colaj</string>
+    <string name="colaj_device">Device List</string>
+    <string name="colaj_device_desc">Choose the Colaj you\'d like to setup</string>
+    <string name="device_not_found">No device was found. \n Ensure your Colaj is turned on and try again</string>
+    <string name="turn_on_wifi">Grant WiFi Access</string>
+    <string name="turn_on_wifi_txt">WiFi Access is needed for completing Canvass setup. Grant the permission from your device\'s settings and return to the app</string>
+    <string name="show_password">Show password</string>
+    <string name="cancel">Cancel</string>
+    <string name="connect">Connect</string>
+    <string name="app_txt">There\'s a whole world of art waiting to be seen. Let\'s get started</string>
+    <string name="step_1">Step 1\nEnter your email address</string>
+    <string name="step_2">Step 2\nCheck your email </string>
+    <string name="enter_email_addy">Enter your email</string>
+    <string name="enter_email_addy_desc">To manage &amp; upload images to your Colaj, your email address is used. A code would be sent to the email you provided. Just enter the code you\'d receive and you\'d be on your merry way. That\'s one less password to remember.</string>
+    <string name="check_your_email">Check your email</string>
+    <string name="check_your_email_desc">Kindly check your email for a verification code we sent you. If you don\'t find it in your inbox, kindly check your spam folder.</string>
+    <string name="gallery">Gallery</string>
+    <string name="store">Store</string>
+
+    <string name="mail">&#xf0e0;</string>
+    <string name="mail_open">&#xf2b6;</string>
+    <string name="location">&#xf041;</string>
+    <string name="bluetooth">&#xf293;</string>
+    <string name="bluetooth_b">&#xf294;</string>
+    <string name="computer">&#xf109;</string>
+    <string name="wifi">&#xf1eb;</string>
+    <string name="lock">&#xf023;</string>
+
+
+</resources>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/parent"
+    android:clickable="true"
+    android:background="@drawable/bottom_border_no_action"
+    android:gravity="center">
+    <com.gecko.canvass.custom.FontAwesomeTextView
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:textSize="@dimen/_14sp"
+        android:id="@+id/wifi"
+        android:layout_marginEnd="@dimen/_10dp"
+        android:textColor="@color/list_item_selected"
+        android:gravity="center"
+        android:text="@string/wifi"/>
+    <com.gecko.canvass.custom.FontAwesomeTextView
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_marginEnd="@dimen/_10dp"
+        android:textSize="@dimen/_14sp"
+        android:gravity="center"
+        android:id="@+id/lock"
+        android:textColor="@color/list_item_selected"
+        android:text="@string/lock"/>
+
+    <TextView
+        android:layout_width="@dimen/_0dp"
+        android:layout_height="@dimen/_50dp"
+        android:layout_weight="1"
+        android:gravity="center|left"
+        android:textSize="@dimen/_14sp"
+        android:paddingLeft="@dimen/_5dp"
+        android:textColor="@color/list_item_selected"
+        android:id="@+id/wifi_name"/>
+</LinearLayout>

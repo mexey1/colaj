@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/parent"
+    android:clickable="true"
+
+    android:gravity="center">
+    <com.gecko.canvass.custom.FontAwesomeTextView
+        android:layout_width="@dimen/_40dp"
+        android:layout_height="@dimen/_40dp"
+        android:textSize="@dimen/_14sp"
+        android:textStyle="bold"
+        android:layout_margin="@dimen/_10dp"
+        android:textColor="@color/white"
+        android:id="@+id/icon"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:text="@string/computer"/>
+
+    <TextView
+        android:layout_width="@dimen/_0dp"
+        android:layout_height="@dimen/_50dp"
+        android:layout_weight="1"
+        android:gravity="center|left"
+        android:textSize="@dimen/_14sp"
+        android:textStyle="bold"
+        android:paddingLeft="@dimen/_5dp"
+        android:background="@drawable/bottom_border_no_action"
+        android:textColor="@color/list_item_selected"
+        android:id="@+id/device_name"/>
+</LinearLayout>

@@ -34,7 +34,9 @@ import com.gecko.canvass.custom.CustomDialogFragment
 import com.gecko.canvass.interfaces.DialogClickListener
 import com.gecko.canvass.interfaces.PermissionsInterface
 import com.gecko.canvass.logic.Bluetooth
+import com.gecko.canvass.logic.BluetoothLE
 import com.gecko.canvass.utility.*
+import java.lang.StringBuilder
 import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.ArrayList
@@ -90,7 +92,8 @@ class BluetoothActivity:AppCompatActivity(),PermissionsInterface {
                 }
             }
             else {//if we have permission
-                registerBluetoothReceiver()//register receiver for bluetooth devices found
+                //registerBluetoothReceiver()//register receiver for bluetooth devices found
+                registerBluetoothLECallback()
                 init()
             }
         }
@@ -107,7 +110,8 @@ class BluetoothActivity:AppCompatActivity(),PermissionsInterface {
     override fun onRequestPermissionsResult(requestCode: Int,permissions: Array<out String>,grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if(grantResults[0]==PackageManager.PERMISSION_GRANTED){
-            registerBluetoothReceiver()
+            //registerBluetoothReceiver()
+            registerBluetoothLECallback()
             init()
         }
         else
@@ -148,9 +152,13 @@ class BluetoothActivity:AppCompatActivity(),PermissionsInterface {
             Log.d(BLUETOOTH_ACTIVITY,"Starting bluetooth discovery")
             //show progress dialog while we are scanning
             dialog = UtilityClass.showDialog("Bluetooth","Scanning for nearby devices", PROGRESS_DIALOG,supportFragmentManager,null,0,-1)
-            var res = Bluetooth.adapter.startDiscovery()//Bluetooth.leScanner?.startScan(registerBluetoothLECallback())
-            Log.d(BLUETOOTH_ACTIVITY,"Discovery started $res")
-            cancelDiscovery()
+            registerBluetoothLECallback()
+            BluetoothLE.leScanner?.startScan(callback)
+            cancelLEDiscovery()
+            /*var res = Bluetooth.adapter.startDiscovery()//Bluetooth.leScanner?.startScan(registerBluetoothLECallback())
+            //Log.d(BLUETOOTH_ACTIVITY,"Discovery started $res")
+            cancelDiscovery()*/
+
         }
     }
 
@@ -158,17 +166,32 @@ class BluetoothActivity:AppCompatActivity(),PermissionsInterface {
         btAdapter.clearAdapter()
         btDeviceHashMap = HashMap()
         dialog = UtilityClass.showDialog("Bluetooth","Scanning for nearby devices", PROGRESS_DIALOG,supportFragmentManager,null,0,-1)
-        Bluetooth.adapter?.startDiscovery()
-        cancelDiscovery()
+        //Bluetooth.adapter?.startDiscovery()
+        //cancelDiscovery()
+        BluetoothLE.leScanner?.startScan(callback)
+        cancelLEDiscovery()
     }
 
     /**
-     * private method to cancel bluetooth discovery 12 secs after it's started
-     */
+     * private method to cancel bluetooth discovery 15 secs after it's started. This method
+     * stops BR/EDR device scans
+     *
     private fun cancelDiscovery(){
         Handler.handler.postDelayed(Runnable {
             Bluetooth.adapter?.cancelDiscovery()
         },15000)
+    }*/
+
+    /**
+     * method called to stop LE scan after 15 seconds
+     */
+    private fun cancelLEDiscovery(){
+        Handler.handler.postDelayed(
+            Runnable {
+                BluetoothLE.leScanner?.stopScan(callback)
+                dialog?.dismiss()
+            }
+            ,15000)
     }
 
     /**
@@ -193,8 +216,8 @@ class BluetoothActivity:AppCompatActivity(),PermissionsInterface {
     }
 
     /**
-     * method to register receiver for bluetooth devices found.
-     */
+     * method to register receiver for bluetooth devices found. This is for receiving BR/EDR scan results
+     *
     private fun registerBluetoothReceiver(){
         if(!this::receiver.isInitialized){
             val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
@@ -206,7 +229,6 @@ class BluetoothActivity:AppCompatActivity(),PermissionsInterface {
                     when (intent.action) {
                         BluetoothDevice.ACTION_FOUND -> {
                             Log.d(TAG,"Pairing method = ${intent.getStringExtra(BluetoothDevice.EXTRA_PAIRING_VARIANT)}")
-
                             if (!this@BluetoothActivity::btRecyclerView.isInitialized) {
                                 btRecyclerView = parent.findViewById<RecyclerView>(R.id.bt_items)
                                 //btRecyclerView.visibility = RecyclerView.VISIBLE
@@ -247,39 +269,55 @@ class BluetoothActivity:AppCompatActivity(),PermissionsInterface {
             registerReceiver(receiver,filter)
             Log.d(BLUETOOTH_ACTIVITY,"bluetooth receiver registered")
         }
-    }
+    }*/
 
     /**
-     * method to register receiver for bluetooth device found.
+     * method to register receiver for LE bluetooth device(s) found.
      */
-    private fun registerBluetoothLECallback():ScanCallback{
+    private fun registerBluetoothLECallback(){
         if(!this::callback.isInitialized){
-            callback = object: ScanCallback(){
+            callback = object: ScanCallback() {
                 override fun onScanResult(callbackType: Int, result: ScanResult?) {
                     super.onScanResult(callbackType, result)
-                    Log.d(BLUETOOTH_ACTIVITY,"Result received")
+                    Log.d(BLUETOOTH_ACTIVITY, "Result received")
                     var device = result?.device
-                     var uuid = UUID.nameUUIDFromBytes(result!!.scanRecord!!.bytes).toString();
-                    when(device!!.bluetoothClass.deviceClass){
-                        BluetoothClass.Device.AUDIO_VIDEO_UNCATEGORIZED->{
-                            Log.d(BLUETOOTH_ACTIVITY,"name=${device.name} : addy=${device.address} : uuids=${device.uuids}: uuid=$uuid class=AUDIO_VIDEO_VIDEO_UNCATEGORIZED")
-                        }
-                        BluetoothClass.Device.AUDIO_VIDEO_VIDEO_MONITOR->{
-                            Log.d(BLUETOOTH_ACTIVITY,"name=${device.name} : addy=${device.address} : uuids=${device.uuids}: uuid=$uuid class=AUDIO_VIDEO_VIDEO_MONITOR")
-                        }
-                        BluetoothClass.Device.COMPUTER_UNCATEGORIZED->{
-                            Log.d(BLUETOOTH_ACTIVITY,"name=${device.name} : addy=${device.address} : uuids=${device.uuids}: uuid=$uuid class=COMPUTER_UNCATEGORIZED")
-                        }
-                        else->{
-                            Log.d(BLUETOOTH_ACTIVITY,"name=${device.name} : addy=${device.address} : uuids=${device.uuids}: uuid=$uuid class=UNKNOWN ${device!!.bluetoothClass.deviceClass}")
+                    var uuidList = result!!.scanRecord!!.serviceUuids
+                    //check if btRecyclerView is initialized
+                    if (!this@BluetoothActivity::btRecyclerView.isInitialized) {
+                        btRecyclerView = parent.findViewById<RecyclerView>(R.id.bt_items)
+                        //btRecyclerView.visibility = RecyclerView.VISIBLE
+                        btAdapter = BTListAdapter()
+                        btRecyclerView.adapter = btAdapter
+                        btRecyclerView.layoutManager =
+                            LinearLayoutManager(this@BluetoothActivity)
+                    }
+                    if (!isFirstChildViewInParent(deviceScan)) {
+                        parent.removeAllViews()
+                        parent.addView(deviceScan)
+                    }
+                    if (btRecyclerView.visibility == View.GONE) {
+                        deviceScan.findViewById<TextView>(R.id.text).visibility = View.GONE
+                        btRecyclerView.visibility = View.VISIBLE
+                    }
+                    if (!btDeviceHashMap.containsKey(device?.address) && uuidList != null) {
+                        //if the hashmap doesn't contain this BT address, let's look through the
+                        //service UUIDs and see if it has the Colaj service available
+                        for (uuid in uuidList) {
+                            if (uuid.toString().equals(COLAJ_UUID, true)) {
+                                Log.d(
+                                    BLUETOOTH_ACTIVITY,
+                                    "LE name=${device?.name} addy=${device?.address} uuid=$uuid"
+                                )
+                                btAdapter.addBluetoothDevice(device!!)
+                                btAdapter.notifyItemInserted(btDeviceHashMap.size)
+                                btDeviceHashMap[device.address] = device
+                                break
+                            }
                         }
                     }
-                    //Log.d(BLUETOOTH_ACTIVITY,"name=${device?.name} addy=${device?.address} class=${ device!!.bluetoothClass.deviceClass} uuids=${UUIDx}")
                 }
             }
-            Log.d(BLUETOOTH_ACTIVITY,"bluetooth receiver registered")
         }
-        return callback
     }
 
     /**

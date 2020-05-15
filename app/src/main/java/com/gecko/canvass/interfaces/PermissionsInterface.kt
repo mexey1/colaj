@@ -8,4 +8,5 @@ interface PermissionsInterface {
     fun requestPermissions(requestCode:Int,permissions:Array<String>)
     fun permissionNotGranted(feature : Int)
     fun isPermissionGranted(feature:String):Boolean
+
 }

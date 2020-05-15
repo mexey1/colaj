@@ -128,7 +128,6 @@ class CustomDialogFragment:DialogFragment {
                 animateProgress(view)
             }
         }
-
         return view
     }
 

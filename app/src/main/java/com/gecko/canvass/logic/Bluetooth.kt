@@ -9,60 +9,70 @@ import android.net.Uri
 import android.os.ParcelUuid
 import android.util.Log
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import com.gecko.canvass.activity.HomeActivity
 import com.gecko.canvass.activity.WifiSelectionActivity
+import com.gecko.canvass.custom.CustomDialogFragment
 import com.gecko.canvass.custom.FallbackBluetoothSocket
 import com.gecko.canvass.exceptions.FallbackException
-import com.gecko.canvass.utility.BT_CONNECT_TIMEOUT
-import com.gecko.canvass.utility.Handler
-import com.gecko.canvass.utility.ThreadPool
-import com.gecko.canvass.utility.UtilityClass
+import com.gecko.canvass.utility.*
+import com.sun.mail.imap.Utility
 import org.json.JSONObject
 import java.io.*
 import java.lang.Exception
+import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 
 object Bluetooth {
     val adapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     private var bluetoothSocket:BluetoothSocket? = null
-    var leScanner:BluetoothLeScanner? = BluetoothAdapter.getDefaultAdapter().bluetoothLeScanner
-    //@Volatile private var btSocketHashMap = HashMap<Int,BluetoothSocket>()
     private var isBTInUse = false
     private val TAG = "Bluetooth"
-    //private lateinit var context:Context//this code is only needed for testing
-    //private lateinit var btSocket:BluetoothSocket
     private lateinit var url:Uri
     private var count=0
     private lateinit var jsonObject:JSONObject
+    private lateinit var dataOutputStream: DataOutputStream
+    private lateinit var scanner: Scanner
+    private var dialog:CustomDialogFragment? = null
 
     /**
-     * method called to pair the local device with the remote device.
+     * method called to pair the device with the Colaj.
      */
     fun pair(device: BluetoothDevice,context: Context){
         if(!isBTInUse)//when bt isn't in use, we can proceed
         {
             //this.context = context
-            lateinit var btSocket: BluetoothSocket
+            //lateinit var btSocket: BluetoothSocket
             //lateinit var atomicReference: AtomicReference<BluetoothSocket>
             try {
                 isBTInUse = true
                 bluetoothSocket?.close()
-                btSocket = device.createRfcommSocketToServiceRecord((ParcelUuid.fromString("00001105-0000-1000-8000-00805F9B34FB").uuid))
+                bluetoothSocket = device.createRfcommSocketToServiceRecord((ParcelUuid.fromString(
+                    COLAJ_UUID).uuid))
                 //btSocket = device.createRfcommSocketToServiceRecord(ParcelUuid.fromString("c7f94713-891e-496a-a0e7-983a0946126e").uuid);
-                Log.d("Bluetooth","btSocket=$btSocket MAC=${device.address}")
+                Log.d("Bluetooth","btSocket=$bluetoothSocket MAC=${device.address}")
                 Log.d("Bluetooth","${device.uuids}")
                 //atomicReference = AtomicReference(btSocket)
                 //btSocketHashMap[btSocket.hashCode()] = btSocket
-                closeConnectionIfTakesTooLong(btSocket)
-                btSocket.connect()
-                bluetoothSocket = btSocket
-                Log.d(TAG,"${btSocket.isConnected}")
-                isBTInUse = false
+                closeConnectionIfTakesTooLong(bluetoothSocket!!)
+                bluetoothSocket?.connect()
+                Log.d(TAG,"${bluetoothSocket?.isConnected}")
+
+                //create streams for communicating with the device
+                dataOutputStream = DataOutputStream(bluetoothSocket!!.outputStream)
+                scanner = Scanner(bluetoothSocket!!.inputStream)
                 startWifiActivity(context)
             }
             catch (e:IOException)   {
-                Log.d(TAG,"${e.printStackTrace()}")
+                /*Log.d(TAG,"${e.printStackTrace()}")
                 Log.d(TAG,"Calling fallback bluetooth connection")
-                fallbackConnection(btSocket,context)
+                fallbackConnection(btSocket,context)*/
+                UtilityClass.showDialog("Connection Failed",
+                    "Failed to establish a connection with the Colaj device",
+                    INFO_DIALOG,(UtilityClass.context as AppCompatActivity).supportFragmentManager,null,0,-1)
+            }
+            finally {
+                isBTInUse = false
             }
         }
         else Toast.makeText(UtilityClass.applicationContext,"Bluetooth is currently in use",Toast.LENGTH_LONG).show()
@@ -71,7 +81,7 @@ object Bluetooth {
     /**
      * When the traditional connect function is called and fails, this private method is called to attempt creating a
      * bluetooth connection using reflection.
-     */
+     *
     private fun fallbackConnection(socket: BluetoothSocket,context: Context?){
         lateinit var  fbBTSocket: FallbackBluetoothSocket
         lateinit var atomicReference: AtomicReference<BluetoothSocket>
@@ -107,7 +117,7 @@ object Bluetooth {
             //fbBTSocket?.close()
             Toast.makeText(UtilityClass.applicationContext,"Bluetooth is ready for use",Toast.LENGTH_LONG).show()
         }
-    }
+    }*/
 
     private fun startWifiActivity(context: Context){
         Handler.handler.post(Runnable {
@@ -147,21 +157,32 @@ object Bluetooth {
         })
     }
 
-    fun sendMessage(string: JSONObject){
+    /**
+     * method called to send message to the connected bluetooth device. This method can be called
+     * on the UI thread as it spawns it's own thread to make network related calls.
+     */
+    fun sendMessage(dialogFragment: CustomDialogFragment,string: JSONObject){
+        dialog = dialogFragment
         jsonObject = string
         /*Log.d(TAG,"$string")
         var intent = Intent(Intent.ACTION_OPEN_DOCUMENT,MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
         (context as WifiSelectionActivity).startActivityForResult(intent,50)*/
+        readMessage()
         ThreadPool.postTask(Runnable {
             try {
                 Log.d(TAG,"Writing message $jsonObject")
-                var dataOut = DataOutputStream(bluetoothSocket!!.outputStream)
                 //val data = ByteArray(4*1024)
-                dataOut.writeChars(string.toString())
-                dataOut.flush()
-                dataOut.close()
+                //dataOutputStream.writeChars(string.toString())
+                //dataOutputStream.writeChars("\n")
+                dataOutputStream.write(jsonObject.toString().toByteArray())
+                dataOutputStream.write("\n".toByteArray())
+                dataOutputStream.flush()
+                //dataOut.close()
             }
             catch (e:IOException){
+                e.printStackTrace()
+            }
+            /*catch (e:IOException){
                 Log.d(TAG,"IOException occurred ${e.message}")
                 e.printStackTrace()
                 if(count<2){
@@ -175,10 +196,63 @@ object Bluetooth {
             catch (e:Exception){
                 e.printStackTrace()
                 Log.d(TAG,"Exception occurred ${e.message}")
+            }*/
+        })
+    }
+
+    /**
+     * method to read response from the Colaj device after we've sent wifi
+     * credentials to it
+     */
+    private fun readMessage(){
+        ThreadPool.postTask(Runnable {
+            val scanner = BufferedReader(InputStreamReader(bluetoothSocket?.inputStream))
+            var response = ""
+            lateinit var json:JSONObject
+            try {
+                response = scanner.readLine()
+                Log.d(TAG,"Server response $response")
+                UtilityClass.showToast("Bluetooth server response is $response")
+                json = JSONObject(response)
+                when(json.getString("action")){
+                    "OK"->{
+                        Handler.handler.post(Runnable {
+                            dialog?.dismiss()
+                            dialog = null
+                            UtilityClass.showToast("WiFi connection was established successfully")
+                            UtilityClass.startActivity(UtilityClass.context!!, HomeActivity::class.java)
+                            //save to shared preferences that we setup the device successfully
+                            UtilityClass.writeBooleanSharedPreference(COLAJ_SETUP_SUCCESSFUL,true)
+                        })
+                        //if we get ok response, we close the bluetooth socket connection afterwards
+                        closeStreams()
+                    }
+                    "FAILED"->{
+                        Handler.handler.post(Runnable {
+                            dialog?.dismiss()
+                            dialog = null
+                            UtilityClass.showDialog("Incorrect WiFi Password",
+                                "The password provided to the WiFi network was incorrect. Please try again",
+                                INFO_DIALOG,(UtilityClass.context as AppCompatActivity).supportFragmentManager,null,0,-1)
+                        })
+                    }
+                }
+            }
+            catch (e:IOException){
+                e.printStackTrace()
             }
         })
     }
 
+    /**
+     * on receiving response from the Colaj device, we need to close the streams and
+     * bluetooth connection.
+     */
+    private fun closeStreams(){
+        scanner.close()
+        dataOutputStream.close()
+        bluetoothSocket?.close()
+    }
 
     /*fun sendImage(uri:Uri,context: Context){
         this.url = uri

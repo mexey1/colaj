@@ -75,7 +75,7 @@ class EmailActivity : AppCompatActivity(){
         if(!this::emailCodeView.isInitialized){
             emailCodeView = layoutInflater.inflate(R.layout.email_code_fragment,parent,false) as ViewGroup
             emailCodeView.findViewById<Button>(R.id.verify).setOnClickListener(View.OnClickListener {
-                val intent = Intent(applicationContext, DeviceScanActivity::class.java)
+                val intent = Intent(applicationContext, BluetoothActivity::class.java)//DeviceScanActivity
                 intent.flags =
                     Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)

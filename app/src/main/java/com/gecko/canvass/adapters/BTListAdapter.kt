@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.gecko.canvass.R
 import com.gecko.canvass.custom.BTListHolder
 import com.gecko.canvass.logic.Bluetooth
+import com.gecko.canvass.logic.BluetoothLE
 import com.gecko.canvass.utility.*
 
 class BTListAdapter : RecyclerView.Adapter<BTListHolder>(){
@@ -21,9 +22,11 @@ class BTListAdapter : RecyclerView.Adapter<BTListHolder>(){
     private lateinit var purple:Drawable
     private val drawablesHashMap = HashMap<Int,Drawable>()
     private var isInit = false
+
     override fun onBindViewHolder(holder: BTListHolder, position: Int) {
         //setIconBackground(holder,position)
-        holder.icon.text = Constants.getIcon(btDevices[position].bluetoothClass.majorDeviceClass)
+        //holder.icon.text = Constants.getIcon(btDevices[position].bluetoothClass.majorDeviceClass)
+        holder.icon.text = Constants.getIcon(BluetoothClass.Device.Major.IMAGING)
         holder.text.text = if(btDevices[position].name===null)"UNKNOWN" else btDevices[position].name
         holder.parent.setOnClickListener(null)
         holder.parent.setOnClickListener{
@@ -34,9 +37,9 @@ class BTListAdapter : RecyclerView.Adapter<BTListHolder>(){
             ThreadPool.postTask(Runnable {
                 //btDevices[position].createBond(0)
                 Log.d("BTListAdapter","current thread = ${Thread.currentThread().name}")
-                Bluetooth.pair(btDevices[position],holder.parent.context)
+                //Bluetooth.pair(btDevices[position],holder.parent.context)
+                BluetoothLE.pair(btDevices[position],holder.parent.context)
             })
-
         }
         Log.d("BTListAdapter","name= ${btDevices[position].name}")
     }

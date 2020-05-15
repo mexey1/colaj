@@ -50,8 +50,6 @@ object WifiSetup {
             Log.d(TAG,"Connecting to wifi called")
             if(Looper.myLooper() == Looper.getMainLooper())
                 NetworkOnMainThreadException()
-            if(ipvInet4Address is Inet4Address)
-                Log.d(TAG,"hello inet4")
             wifiAttempts.set(0)
             Log.d(TAG,"Attempting to connect to ${result.SSID}")
             connect(result,null)

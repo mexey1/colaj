@@ -12,6 +12,8 @@ import com.gecko.canvass.R
 import com.gecko.canvass.activity.HomeActivity
 import com.gecko.canvass.custom.WifiSelectionListHolder
 import com.gecko.canvass.interfaces.DialogClickListener
+import com.gecko.canvass.logic.Bluetooth
+import com.gecko.canvass.logic.BluetoothLE
 import com.gecko.canvass.logic.WifiSetup
 import com.gecko.canvass.utility.*
 import org.json.JSONObject
@@ -75,23 +77,30 @@ class WifiSelectionListAdapter: RecyclerView.Adapter<WifiSelectionListHolder>() 
      * if wifi is locked, display dialog for user to provide password
      */
     private fun createInputDialog(){
+        val fragmentManager = (current!!.context as AppCompatActivity).supportFragmentManager
         val listener = object: DialogClickListener{
             @SuppressLint("LongLogTag")
             override fun onClick(result: JSONObject) {
                 super.onClick(result)
+                result.put("action","wifiCred")
                 result.put("wifi",wifiNetworks[selectedPosition].SSID)
                 Log.d(TAG,"Connecting to ${wifiNetworks[selectedPosition].SSID}")
                 //WifiSetup.connectToWifiNetwork should not be run on UI Thread
-                ThreadPool.postTask(Runnable {
+                /*ThreadPool.postTask(Runnable {
                     Log.d(TAG,"Running runnable")
-                    WifiSetup.connectToWifiNetwork(wifiNetworks[selectedPosition],result)
-                })
-                //Bluetooth.sendMessage(result)
+                    //WifiSetup.connectToWifiNetwork(wifiNetworks[selectedPosition],result)
+                })*/
+                //val dialog = UtilityClass.showDialog("Verifying WiFi Password",
+                // "Please wait while we verify the WiFi credentials", PROGRESS_DIALOG,fragmentManager,null,0,-1)
+                val dialog = UtilityClass.showDialog("Sharing credentials",
+                     "Please wait while we share the WiFi credentials with your device", PROGRESS_DIALOG,fragmentManager,null,0,-1)
+                //Bluetooth.sendMessage(dialog,result)
+                BluetoothLE.sendMessage(dialog,result)
                 //UtilityClass.startActivity(current!!.context,HomeActivity::class.java)
             }
         }
         val title = wifiNetworks[selectedPosition].SSID
-        val fragmentManager = (current!!.context as AppCompatActivity).supportFragmentManager
+
         //val height = (current!!.context as AppCompatActivity).resources.getDimension(R.dimen._500dp).toInt()
         UtilityClass.showDialog(title = title,listener = listener, dialogType = INPUT_DIALOG, fragmentManager = fragmentManager, width = 0,height = -1,
             message = "Enter the password to $title")
